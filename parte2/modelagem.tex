@@ -1,1 +1,88 @@
+% Secao de modelagem - Pessoa 2
+% Requer no preambulo: \usepackage{amsmath,amssymb}
+\section{Modelagem do Problema}
 
+O problema é um \textit{flowshop} de três máquinas em que todas as tarefas
+seguem a rota $1 \rightarrow 2 \rightarrow 3$, com a restrição adicional de
+\textbf{não-espera} (\textit{no-wait}) entre as máquinas 1 e 2: assim que uma
+tarefa termina na máquina 1, ela deve iniciar imediatamente na máquina 2. Entre
+as máquinas 2 e 3 a espera é permitida. O objetivo é minimizar o
+\textit{makespan} $C_{\max}$, isto é, o instante em que a última tarefa termina
+na máquina 3. Adotou-se uma formulação disjuntiva com restrições do tipo
+\textit{big-M}, considerando programação de permutação (a mesma ordem das
+tarefas nas três máquinas).
+
+\subsection{Conjuntos e parâmetros}
+\begin{itemize}
+  \item $J = \{1, \dots, n\}$: conjunto de tarefas;
+  \item $M = \{1, 2, 3\}$: conjunto de máquinas, na ordem da rota;
+  \item $p_{j,k}$: tempo de processamento da tarefa $j \in J$ na máquina $k \in M$;
+  \item $B$: constante suficientemente grande (\textit{big-M}). Usa-se
+        $B = \sum_{j \in J}\sum_{k \in M} p_{j,k}$, pois nenhuma programação
+        semiativa termina depois desse instante.
+\end{itemize}
+
+\subsection{Variáveis de decisão}
+\begin{itemize}
+  \item $S_{j,k} \geq 0$: instante de início da tarefa $j$ na máquina $k$;
+  \item $y_{i,j} \in \{0,1\}$, para $i,j \in J$ com $i<j$: vale 1 se a tarefa
+        $i$ precede a tarefa $j$ e 0 caso contrário. Basta definir a variável
+        para $i<j$, já que ``$j$ precede $i$'' equivale a $y_{i,j}=0$;
+  \item $C_{\max} \geq 0$: \textit{makespan}.
+\end{itemize}
+
+\subsection{Modelo matemático}
+\begin{align}
+\min \quad & C_{\max} \label{eq:fo}\\
+\text{s.a.} \quad
+& S_{j,2} = S_{j,1} + p_{j,1}
+  && \forall j \in J \label{eq:nowait}\\
+& S_{j,3} \geq S_{j,2} + p_{j,2}
+  && \forall j \in J \label{eq:rota}\\
+& S_{j,k} \geq S_{i,k} + p_{i,k} - B\,(1 - y_{i,j})
+  && \forall i,j \in J,\ i<j,\ \forall k \in M \label{eq:disj1}\\
+& S_{i,k} \geq S_{j,k} + p_{j,k} - B\,y_{i,j}
+  && \forall i,j \in J,\ i<j,\ \forall k \in M \label{eq:disj2}\\
+& C_{\max} \geq S_{j,3} + p_{j,3}
+  && \forall j \in J \label{eq:cmax}\\
+& S_{j,k} \geq 0,\quad y_{i,j} \in \{0,1\},\quad C_{\max} \geq 0 \label{eq:dom}
+\end{align}
+
+\subsection{Justificativa}
+\begin{itemize}
+  \item \textbf{Função objetivo \eqref{eq:fo}:} minimizar o instante de término
+        do último trabalho, que é o tempo de execução total pedido no enunciado.
+  \item \textbf{Não-espera \eqref{eq:nowait}:} a restrição é de
+        \emph{igualdade}: a tarefa começa na máquina 2 exatamente quando termina
+        na máquina 1. É a restrição que diferencia este problema de um
+        \textit{flowshop} clássico.
+  \item \textbf{Rota \eqref{eq:rota}:} na máquina 3 a tarefa só pode começar
+        depois de terminar na máquina 2. A desigualdade permite espera entre as
+        máquinas 2 e 3.
+  \item \textbf{Disjuntivas \eqref{eq:disj1}--\eqref{eq:disj2}:} cada máquina
+        processa uma tarefa por vez. Se $y_{i,j}=1$, \eqref{eq:disj1} obriga $j$ a
+        começar depois de $i$ terminar e \eqref{eq:disj2} fica relaxada pelo
+        termo $B$. Se $y_{i,j}=0$, ocorre o inverso. Como a mesma variável vale
+        para as três máquinas, a ordem das tarefas é a mesma em todas
+        (permutação). Entre as máquinas 1 e 2 isso já é consequência da
+        restrição de não-espera.
+  \item \textbf{\textit{Makespan} \eqref{eq:cmax}:} $C_{\max}$ é limitado
+        inferiormente pelo término de cada tarefa na última máquina. Como a
+        variável está sendo minimizada, ela assume o maior desses valores.
+\end{itemize}
+
+\paragraph{Corte válido (opcional).} Para fortalecer o limitante da relaxação
+linear, que costuma ser fraco em modelos \textit{big-M}, foi adicionado, para
+cada máquina $k$,
+\begin{equation}
+C_{\max} \geq \min_{j \in J} \sum_{t<k} p_{j,t} \;+\; \sum_{j \in J} p_{j,k}
+\;+\; \min_{j \in J} \sum_{t>k} p_{j,t}
+\qquad \forall k \in M,
+\end{equation}
+ou seja, a carga total da máquina $k$ somada ao menor tempo possível antes e
+depois dela. O corte não elimina nenhuma solução viável e não altera o ótimo.
+
+\paragraph{Tamanho do modelo.} São $3n + 1$ variáveis contínuas e
+$n(n-1)/2$ binárias. Há $2n$ restrições de rota, $3n(n-1)$ disjuntivas, $n$
+de \textit{makespan} e 3 cortes. Para a maior instância ($n=20$): 61 variáveis
+contínuas, 190 binárias e 1203 restrições.
