@@ -1,0 +1,91 @@
+\section{Apresentação do Problema}
+
+\subsection{Contexto e Relevância Prática}
+O sequenciamento de produção em ambientes industriais busca definir a ordem e os instantes de execução de um conjunto de tarefas em máquinas compartilhadas, de modo a reduzir o tempo total de fabricação, evitar gargalos e aumentar a produtividade da linha. Em setores como metalurgia, fundição, indústria química e processamento de alimentos, existem restrições tecnológicas rígidas entre determinadas etapas: após deixar uma máquina (por exemplo, um forno de aquecimento ou um reator), o produto não pode ficar parado aguardando a etapa seguinte (como prensagem ou moldagem), pois perderia temperatura ou características físico-químicas.
+
+Neste trabalho, estuda-se um setor industrial composto por três máquinas dispostas em arranjo \textit{flowshop} ($M_1$, $M_2$ e $M_3$). Todas as tarefas devem percorrer exatamente a mesma sequência tecnológica ($M_1 \to M_2 \to M_3$), com tempos de processamento específicos para cada tarefa em cada máquina. Por exigência do processo, toda tarefa que conclui sua operação na máquina $M_1$ deve iniciar imediatamente seu processamento na máquina $M_2$, sem qualquer tempo de espera intermediário (\textit{no-wait}). O objetivo é determinar a programação das tarefas que minimize o tempo total de execução do lote (\textit{makespan}).
+
+\subsection{Descrição Formal, Premissas e Classificação}
+O problema recebe como dados de entrada:
+\begin{itemize}
+    \item O conjunto de tarefas a serem programadas, $J = \{1, 2, \dots, n\}$;
+    \item O conjunto ordenado de três máquinas, $M = \{1, 2, 3\}$;
+    \item O tempo de processamento $p_{j,k} > 0$ da tarefa $j \in J$ na máquina $k \in M$.
+\end{itemize}
+
+A partir dessas entradas, deseja-se determinar os instantes de início $S_{j,k} \ge 0$ (e, consequentemente, os instantes de término $C_{j,k} = S_{j,k} + p_{j,k}$) de cada tarefa $j \in J$ em cada máquina $k \in M$, de forma a minimizar o instante de conclusão da última tarefa na máquina $M_3$:
+\begin{equation}
+    C_{\max} = \max_{j \in J} C_{j,3}.
+\end{equation}
+
+Adotam-se as seguintes regras e premissas do ambiente \textit{flowshop}:
+\begin{itemize}
+    \item \textbf{Fluxo unidirecional:} todas as tarefas passam obrigatoriamente pelas máquinas na ordem $M_1 \to M_2 \to M_3$, e todas estão disponíveis no instante $t = 0$.
+    \item \textbf{Capacidade unitária e não preempção:} cada máquina processa no máximo uma tarefa por vez e, uma vez iniciada, uma operação não pode ser interrompida até seu término.
+    \item \textbf{Ausência de espera entre $M_1$ e $M_2$ (\textit{no-wait} parcial):} para toda tarefa $j \in J$, exige-se que $S_{j,2} = C_{j,1} = S_{j,1} + p_{j,1}$. Para satisfazer essa condição sem sobreposição na máquina $M_2$, é permitido atrasar propositalmente o início de uma tarefa na máquina $M_1$, gerando ociosidade controlada em $M_1$.
+    \item \textbf{Espera permitida entre $M_2$ e $M_3$:} após concluir a etapa em $M_2$, uma tarefa pode aguardar em estoque intermediário (\textit{buffer}) até que $M_3$ esteja disponível ($S_{j,3} \ge C_{j,2}$).
+    \item \textbf{Propriedade de permutação:} devido à restrição \textit{no-wait} entre $M_1$ e $M_2$ (com $p_{j,1} > 0$), a ordem de execução nas duas primeiras máquinas é necessariamente idêntica. Além disso, para minimizar $C_{\max}$ na última máquina ($M_3$), atender as tarefas na mesma ordem de chegada em $M_2$ sempre preserva a otimalidade; logo, existe ao menos uma solução ótima permutacional (mesma sequência de tarefas em $M_1$, $M_2$ e $M_3$).
+\end{itemize}
+
+Na literatura de Pesquisa Operacional, seguindo a notação clássica $\alpha \mid \beta \mid \gamma$ de \cite{graham1979}, o problema classifica-se como um \textit{Flowshop} de três máquinas com restrição parcial de ausência de espera, denotado por $F3 \mid \text{no-wait}(M_1, M_2) \mid C_{\max}$. Trata-se de uma variante da família de problemas \textit{no-wait flowshop}, amplamente revisada por \cite{hall1996} e contextualizada na teoria geral de escalonamento por \cite{pinedo2016}.
+
+\subsection{Estrutura dos Dados de Entrada}
+Os experimentos computacionais utilizam as instâncias disponibilizadas na pasta da disciplina. Cada arquivo informa a quantidade de tarefas $n$ e a matriz de tempos de processamento $p_{j,k}$ de cada tarefa $j \in \{1, \dots, n\}$ nas três máquinas ($M_1$, $M_2$ e $M_3$).
+
+\textit{[NOTA PARA O GRUPO: assim que baixarem a pasta do Teams, substituir este parágrafo por uma tabela resumindo o nome de cada instância, o número de tarefas $n$ e a faixa de variação dos tempos de processamento.]}
+
+\subsection{Exemplo Ilustrativo Resolvido Manualmente}
+Para validar a formulação matemática e o código no \textit{solver} antes da execução das instâncias reais, construiu-se uma instância reduzida com $n = 3$ tarefas ($J = \{J_1, J_2, J_3\}$), cujos tempos de processamento constam na Tabela~\ref{tab:exemplo_dados}.
+
+\begin{table}[h!]
+\centering
+\caption{Tempos de processamento $p_{j,k}$ da instância ilustrativa.}
+\label{tab:exemplo_dados}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Tarefa & Máquina 1 ($p_{j,1}$) & Máquina 2 ($p_{j,2}$) & Máquina 3 ($p_{j,3}$) \\ \midrule
+$J_1$ & 2 & 6 & 2 \\
+$J_2$ & 1 & 5 & 3 \\
+$J_3$ & 4 & 1 & 3 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Como há $n = 3$ tarefas, existem $3! = 6$ sequências permutacionais possíveis. Em qualquer sequência $(a, b, c)$, para garantir que a tarefa $b$ não espere entre $M_1$ e $M_2$, seu início em $M_1$ deve satisfazer $S_{b,1} = \max(C_{a,1},\; C_{a,2} - p_{b,1})$, enquanto na máquina $M_3$ vale $S_{b,3} = \max(C_{b,2},\; C_{a,3})$. A Tabela~\ref{tab:exemplo_permutacoes} apresenta o \textit{makespan} obtido em todas as 6 sequências.
+
+\begin{table}[h!]
+\centering
+\caption{Enumeração completa das sequências viáveis para a instância ilustrativa.}
+\label{tab:exemplo_permutacoes}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+Sequência & Términos em $M_3$ ($C_{a,3},\, C_{b,3},\, C_{c,3}$) & \textit{Makespan} ($C_{\max}$) \\ \midrule
+$(J_1, J_2, J_3)$ & 10,\; 16,\; 19 & 19 \\
+$(J_1, J_3, J_2)$ & 10,\; 13,\; 17 & 17 \\
+$(J_2, J_1, J_3)$ & 9,\; 14,\; 17 & 17 \\
+\textbf{$(J_2, J_3, J_1)$} & \textbf{9,\; 12,\; 16} & \textbf{16} \\
+$(J_3, J_1, J_2)$ & 8,\; 14,\; 20 & 20 \\
+$(J_3, J_2, J_1)$ & 8,\; 13,\; 18 & 18 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+A solução ótima única é a sequência \textbf{$(J_2, J_3, J_1)$}, com tempo total mínimo \textbf{$C_{\max} = 16$}. O cronograma completo dessa solução encontra-se na Tabela~\ref{tab:exemplo_cronograma}.
+
+\begin{table}[h!]
+\centering
+\caption{Cronograma ótimo da sequência $(J_2, J_3, J_1)$ com $C_{\max} = 16$.}
+\label{tab:exemplo_cronograma}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+Tarefa & $M_1$ $[S_{j,1},\, C_{j,1}]$ & $M_2$ $[S_{j,2},\, C_{j,2}]$ & $M_3$ $[S_{j,3},\, C_{j,3}]$ & Observação \\ \midrule
+$J_2$ & $[0, 1]$ & $[1, 6]$ & $[6, 9]$ & Sem espera nas transições \\
+$J_3$ & $[2, 6]$ & $[6, 7]$ & $[9, 12]$ & Atraso de 1 u.t. em $M_1$; espera de 2 u.t. antes de $M_3$ \\
+$J_1$ & $[6, 8]$ & $[8, 14]$ & $[14, 16]$ & Entra em $M_2$ imediatamente após $M_1$ \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Esse exemplo atua como um teste diagnóstico rigoroso para validar o modelo no \textit{solver}:
+\begin{itemize}
+    \item Na solução ótima, $J_3$ é atrasada deliberadamente em 1 unidade de tempo na máquina $M_1$ (inicia em $t = 2$, não em $t = 1$) para concluir $M_1$ exatamente em $t = 6$, quando $M_2$ fica livre. Além disso, $J_3$ aguarda 2 unidades de tempo entre $M_2$ e $M_3$ ($t = 7$ até $t = 9$).
+    \item Caso o modelo omita incorretamente a restrição \textit{no-wait} entre $M_1$ e $M_2$, a mesma sequência $(J_2, J_3, J_1)$ produzirá $C_{\max} = 15$ (valor inferior ao real).
+    \item Caso o modelo imponha indevidamente \textit{no-wait} também entre $M_2$ e $M_3$, o ótimo subirá para $C_{\max} = 17$ (na sequência $(J_2, J_1, J_3)$).
+\end{itemize}
