@@ -1,88 +1,264 @@
-% Secao de modelagem - Pessoa 2
-% Requer no preambulo: \usepackage{amsmath,amssymb}
-\section{Modelagem do Problema}
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage[margin=2.5cm]{geometry}
+\newtheorem{proposicao}{Proposição}
 
-O problema é um \textit{flowshop} de três máquinas em que todas as tarefas
-seguem a rota $1 \rightarrow 2 \rightarrow 3$, com a restrição adicional de
-\textbf{não-espera} (\textit{no-wait}) entre as máquinas 1 e 2: assim que uma
-tarefa termina na máquina 1, ela deve iniciar imediatamente na máquina 2. Entre
-as máquinas 2 e 3 a espera é permitida. O objetivo é minimizar o
-\textit{makespan} $C_{\max}$, isto é, o instante em que a última tarefa termina
-na máquina 3. Adotou-se uma formulação disjuntiva com restrições do tipo
-\textit{big-M}, considerando programação de permutação (a mesma ordem das
-tarefas nas três máquinas).
+% =====================================================================
+% Copie a partir daqui para o relatório (pacotes: amsmath, amssymb,
+% amsthm, booktabs, tikz; e o \newtheorem acima).
+% =====================================================================
+\begin{document}
+
+\section{Modelagem do problema}
+
+\subsection{Caracterização e hipóteses}
+
+O problema é um \emph{flowshop} de três máquinas $M_1$, $M_2$ e $M_3$, em que
+cada uma das $n$ tarefas precisa ser processada nas três máquinas, nessa ordem.
+Os tempos de processamento variam de tarefa para tarefa. Entre $M_1$ e $M_2$ não
+pode haver espera: uma tarefa que termina em $M_1$ precisa entrar imediatamente
+em $M_2$. Entre $M_2$ e $M_3$ a espera é permitida. O objetivo é minimizar o
+tempo total de execução de todas as tarefas, isto é, o \emph{makespan}
+$C_{\max}$. Na notação de três campos de Graham, o problema é
+\[
+  F3 \mid \mathit{nwt}(M_1 \to M_2),\ \mathit{prmu} \mid C_{\max}.
+\]
+
+Adotamos as hipóteses usuais de \emph{flowshop}, que o enunciado não contradiz:
+\begin{enumerate}
+  \item todas as tarefas estão disponíveis no instante $t=0$;
+  \item os tempos de processamento são conhecidos e determinísticos, e já incluem
+        eventuais tempos de preparação;
+  \item não há preempção: uma operação iniciada vai até o fim sem interrupção;
+  \item cada máquina processa no máximo uma tarefa por vez, e cada tarefa está em
+        no máximo uma máquina por vez;
+  \item o espaço de espera (\emph{buffer}) entre $M_2$ e $M_3$ é ilimitado;
+  \item a restrição de não espera vale só para a passagem $M_1 \to M_2$. Uma
+        tarefa pode ter o \emph{início} em $M_1$ adiado (a máquina $M_1$ fica
+        ociosa) para que termine exatamente quando $M_2$ estiver livre.
+\end{enumerate}
+
+\paragraph{Por que basta considerar permutações.}
+Usamos um modelo de \emph{flowshop} de permutação, em que a mesma sequência de
+tarefas é usada nas três máquinas. Essa escolha não perde otimalidade:
+
+\begin{proposicao}
+Existe uma programação ótima de $F3 \mid \mathit{nwt}(M_1\to M_2) \mid C_{\max}$
+em que a sequência das tarefas é a mesma nas três máquinas.
+\end{proposicao}
+\begin{proof}[Justificativa]
+\emph{($M_1$ e $M_2$.)} Como cada tarefa entra em $M_2$ no exato instante em que
+sai de $M_1$, a ordem de entrada em $M_2$ é a ordem de saída de $M_1$, que por
+sua vez é a ordem de processamento em $M_1$. Logo, as duas sequências são
+necessariamente iguais.
+
+\emph{($M_2$ e $M_3$.)} Vale o argumento clássico de troca para as duas últimas
+máquinas de um \emph{flowshop} com objetivo $C_{\max}$ (Conway, Maxwell e Miller,
+1967): se duas tarefas consecutivas em $M_3$ aparecem na ordem inversa da de
+$M_2$, trocá-las em $M_3$ não aumenta o \emph{makespan}. A troca altera apenas a
+programação de $M_3$ e, portanto, não interfere na restrição de não espera entre
+$M_1$ e $M_2$. Repetindo as trocas, obtém-se em $M_3$ a mesma sequência de $M_2$
+sem piorar $C_{\max}$.
+\end{proof}
+
+Assim, decidir a programação equivale a escolher \emph{uma} permutação das
+tarefas e calcular os instantes de término em cada máquina.
 
 \subsection{Conjuntos e parâmetros}
+
 \begin{itemize}
-  \item $J = \{1, \dots, n\}$: conjunto de tarefas;
-  \item $M = \{1, 2, 3\}$: conjunto de máquinas, na ordem da rota;
-  \item $p_{j,k}$: tempo de processamento da tarefa $j \in J$ na máquina $k \in M$;
-  \item $B$: constante suficientemente grande (\textit{big-M}). Usa-se
-        $B = \sum_{j \in J}\sum_{k \in M} p_{j,k}$, pois nenhuma programação
-        semiativa termina depois desse instante.
+  \item $J = \{1,\dots,n\}$: conjunto de tarefas, indexado por $j$;
+  \item $K = \{1,\dots,n\}$: conjunto de posições na sequência, indexado por $k$;
+  \item $M = \{1,2,3\}$: conjunto de máquinas, indexado por $m$;
+  \item $p_{jm} \ge 0$: tempo de processamento da tarefa $j$ na máquina $m$.
 \end{itemize}
 
 \subsection{Variáveis de decisão}
+
 \begin{itemize}
-  \item $S_{j,k} \geq 0$: instante de início da tarefa $j$ na máquina $k$;
-  \item $y_{i,j} \in \{0,1\}$, para $i,j \in J$ com $i<j$: vale 1 se a tarefa
-        $i$ precede a tarefa $j$ e 0 caso contrário. Basta definir a variável
-        para $i<j$, já que ``$j$ precede $i$'' equivale a $y_{i,j}=0$;
-  \item $C_{\max} \geq 0$: \textit{makespan}.
+  \item $x_{jk} \in \{0,1\}$: vale 1 se a tarefa $j$ ocupa a posição $k$ da
+        sequência, e 0 caso contrário;
+  \item $C_{km} \ge 0$: instante de término, na máquina $m$, da tarefa que ocupa
+        a posição $k$.
 \end{itemize}
 
-\subsection{Modelo matemático}
+A formulação é \emph{posicional}: em vez de perguntar ``quem vem antes de quem''
+para cada par de tarefas, ela atribui cada tarefa a uma posição. Os tempos são
+indexados pela posição, e não pela tarefa, porque as relações de precedência
+nas máquinas acontecem entre posições consecutivas ($k-1$ e $k$). Para
+simplificar a notação, definimos a expressão linear
+\[
+  P_{km} \;=\; \sum_{j \in J} p_{jm}\, x_{jk},
+\]
+que dá o tempo de processamento, na máquina $m$, da tarefa colocada na posição
+$k$. Como apenas um $x_{jk}$ vale 1 para cada $k$, $P_{km}$ seleciona exatamente
+o tempo dessa tarefa. Como os $p_{jm}$ são parâmetros, $P_{km}$ é linear nas
+variáveis.
+
+\subsection{Função objetivo}
+
+\begin{equation}
+  \min \; C_{n3} \label{eq:obj}
+\end{equation}
+
+O \emph{makespan} é o instante em que a última tarefa termina na última
+máquina. Pelas restrições de capacidade de $M_3$ (abaixo), os términos em $M_3$
+são crescentes com a posição, de modo que a última tarefa a terminar é a da
+posição $n$. Não é preciso uma variável auxiliar $C_{\max}$.
+
+\subsection{Restrições}
+
+\paragraph{Atribuição.} Cada tarefa ocupa exatamente uma posição, e cada posição
+recebe exatamente uma tarefa:
 \begin{align}
-\min \quad & C_{\max} \label{eq:fo}\\
-\text{s.a.} \quad
-& S_{j,2} = S_{j,1} + p_{j,1}
-  && \forall j \in J \label{eq:nowait}\\
-& S_{j,3} \geq S_{j,2} + p_{j,2}
-  && \forall j \in J \label{eq:rota}\\
-& S_{j,k} \geq S_{i,k} + p_{i,k} - B\,(1 - y_{i,j})
-  && \forall i,j \in J,\ i<j,\ \forall k \in M \label{eq:disj1}\\
-& S_{i,k} \geq S_{j,k} + p_{j,k} - B\,y_{i,j}
-  && \forall i,j \in J,\ i<j,\ \forall k \in M \label{eq:disj2}\\
-& C_{\max} \geq S_{j,3} + p_{j,3}
-  && \forall j \in J \label{eq:cmax}\\
-& S_{j,k} \geq 0,\quad y_{i,j} \in \{0,1\},\quad C_{\max} \geq 0 \label{eq:dom}
+  \sum_{k \in K} x_{jk} &= 1 && \forall\, j \in J \label{eq:atr1}\\
+  \sum_{j \in J} x_{jk} &= 1 && \forall\, k \in K \label{eq:atr2}
+\end{align}
+Juntas, \eqref{eq:atr1}--\eqref{eq:atr2} garantem que $x$ representa uma
+permutação das tarefas.
+
+\paragraph{Máquina 1.} A primeira tarefa só pode terminar depois de processada.
+As demais começam em $M_1$ depois que a anterior sai de $M_1$:
+\begin{align}
+  C_{11} &\ge P_{11} \label{eq:m1a}\\
+  C_{k1} &\ge C_{k-1,1} + P_{k1} && \forall\, k \in K,\ k \ge 2 \label{eq:m1b}
+\end{align}
+A desigualdade (e não a igualdade) permite que $M_1$ fique ociosa, adiando o
+início de uma tarefa. Isso é essencial: às vezes é preciso esperar para começar
+em $M_1$ de modo a não terminar antes de $M_2$ estar livre.
+
+\paragraph{Não espera entre $M_1$ e $M_2$.} A tarefa começa em $M_2$ exatamente
+no instante em que termina em $M_1$. O início em $M_2$ é $C_{k2} - P_{k2}$, logo:
+\begin{align}
+  C_{k2} &= C_{k1} + P_{k2} && \forall\, k \in K \label{eq:nw}
+\end{align}
+Esta é a restrição que distingue o problema de um \emph{flowshop} comum. Com
+``$\ge$'' no lugar de ``$=$'', a tarefa poderia esperar entre $M_1$ e $M_2$.
+
+\paragraph{Capacidade da máquina 2.} A tarefa da posição $k$ só entra em $M_2$
+depois que a tarefa da posição $k-1$ sai de $M_2$:
+\begin{align}
+  C_{k2} &\ge C_{k-1,2} + P_{k2} && \forall\, k \in K,\ k \ge 2 \label{eq:m2}
+\end{align}
+Substituindo \eqref{eq:nw}, esta restrição equivale a $C_{k1} \ge C_{k-1,2}$: a
+tarefa só pode \emph{terminar} em $M_1$ quando $M_2$ estiver livre. É ela que,
+combinada com \eqref{eq:m1b}, força o eventual atraso do início em $M_1$.
+
+\paragraph{Máquina 3: precedência tecnológica e capacidade.} A tarefa só começa
+em $M_3$ depois de sair de $M_2$ (aqui a espera é permitida, por isso
+``$\ge$''), e depois que a tarefa anterior sai de $M_3$:
+\begin{align}
+  C_{k3} &\ge C_{k2} + P_{k3} && \forall\, k \in K \label{eq:m3a}\\
+  C_{k3} &\ge C_{k-1,3} + P_{k3} && \forall\, k \in K,\ k \ge 2 \label{eq:m3b}
 \end{align}
 
-\subsection{Justificativa}
+\paragraph{Domínio das variáveis.}
+\begin{align}
+  x_{jk} &\in \{0,1\} && \forall\, j \in J,\ k \in K \label{eq:dom1}\\
+  C_{km} &\ge 0 && \forall\, k \in K,\ m \in M \label{eq:dom2}
+\end{align}
+
+\subsection{Modelo completo}
+
+\begin{align*}
+  \min\quad & C_{n3}\\
+  \text{s.a.}\quad
+  & \textstyle\sum_{k\in K} x_{jk} = 1 && \forall j \in J\\
+  & \textstyle\sum_{j\in J} x_{jk} = 1 && \forall k \in K\\
+  & C_{11} \ge \textstyle\sum_{j} p_{j1}x_{j1}\\
+  & C_{k1} \ge C_{k-1,1} + \textstyle\sum_{j} p_{j1}x_{jk} && \forall k \ge 2\\
+  & C_{k2} = C_{k1} + \textstyle\sum_{j} p_{j2}x_{jk} && \forall k \in K\\
+  & C_{k2} \ge C_{k-1,2} + \textstyle\sum_{j} p_{j2}x_{jk} && \forall k \ge 2\\
+  & C_{k3} \ge C_{k2} + \textstyle\sum_{j} p_{j3}x_{jk} && \forall k \in K\\
+  & C_{k3} \ge C_{k-1,3} + \textstyle\sum_{j} p_{j3}x_{jk} && \forall k \ge 2\\
+  & x_{jk} \in \{0,1\},\quad C_{km} \ge 0
+\end{align*}
+
+\paragraph{Tamanho e características.} O modelo tem $n^2$ variáveis binárias,
+$3n$ variáveis contínuas e $2n + 1 + (n-1) + n + (n-1) + n + (n-1) = 7n - 2$
+restrições, além do domínio. É um modelo de programação linear inteira mista
+(PLIM) sem constantes ``big-$M$'', o que tende a gerar relaxações lineares mais
+fortes do que as formulações disjuntivas com variáveis de precedência
+$y_{ij}$. O problema é NP-difícil, já que $F3 \,||\, C_{\max}$ é NP-difícil
+(Garey, Johnson e Sethi, 1976). Por isso, espera-se que o tempo de solução
+cresça rapidamente com $n$, o que motiva o limite de 3600 segundos nos
+experimentos.
+
+\subsection{Exemplo ilustrativo e validação}
+
+Considere $n=4$ tarefas com os tempos da Tabela~\ref{tab:ex}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+ & $T_1$ & $T_2$ & $T_3$ & $T_4$\\
+\midrule
+$p_{j1}$ & 3 & 5 & 2 & 4\\
+$p_{j2}$ & 6 & 2 & 4 & 3\\
+$p_{j3}$ & 2 & 4 & 5 & 3\\
+\bottomrule
+\end{tabular}
+\caption{Tempos de processamento do exemplo.}
+\label{tab:ex}
+\end{table}
+
+Resolvendo o modelo, obtém-se a sequência ótima $T_3, T_4, T_1, T_2$ com
+$C_{\max}^* = 21$ (a sequência $T_1,T_2,T_3,T_4$ daria $C_{\max}=23$). A
+Figura~\ref{fig:gantt} mostra os dois efeitos do modelo:
 \begin{itemize}
-  \item \textbf{Função objetivo \eqref{eq:fo}:} minimizar o instante de término
-        do último trabalho, que é o tempo de execução total pedido no enunciado.
-  \item \textbf{Não-espera \eqref{eq:nowait}:} a restrição é de
-        \emph{igualdade}: a tarefa começa na máquina 2 exatamente quando termina
-        na máquina 1. É a restrição que diferencia este problema de um
-        \textit{flowshop} clássico.
-  \item \textbf{Rota \eqref{eq:rota}:} na máquina 3 a tarefa só pode começar
-        depois de terminar na máquina 2. A desigualdade permite espera entre as
-        máquinas 2 e 3.
-  \item \textbf{Disjuntivas \eqref{eq:disj1}--\eqref{eq:disj2}:} cada máquina
-        processa uma tarefa por vez. Se $y_{i,j}=1$, \eqref{eq:disj1} obriga $j$ a
-        começar depois de $i$ terminar e \eqref{eq:disj2} fica relaxada pelo
-        termo $B$. Se $y_{i,j}=0$, ocorre o inverso. Como a mesma variável vale
-        para as três máquinas, a ordem das tarefas é a mesma em todas
-        (permutação). Entre as máquinas 1 e 2 isso já é consequência da
-        restrição de não-espera.
-  \item \textbf{\textit{Makespan} \eqref{eq:cmax}:} $C_{\max}$ é limitado
-        inferiormente pelo término de cada tarefa na última máquina. Como a
-        variável está sendo minimizada, ela assume o maior desses valores.
+  \item \textbf{Atraso proposital em $M_1$:} $T_2$ poderia começar em $M_1$ no
+        instante 9, mas terminaria em 14 com $M_2$ ainda ocupada por $T_1$ (até
+        15). Como não pode esperar, ela começa em 10 e termina em $M_1$
+        exatamente em 15, entrando direto em $M_2$.
+  \item \textbf{Espera permitida antes de $M_3$:} $T_4$ sai de $M_2$ em 9 e
+        espera até 11 para entrar em $M_3$.
 \end{itemize}
 
-\paragraph{Corte válido (opcional).} Para fortalecer o limitante da relaxação
-linear, que costuma ser fraco em modelos \textit{big-M}, foi adicionado, para
-cada máquina $k$,
-\begin{equation}
-C_{\max} \geq \min_{j \in J} \sum_{t<k} p_{j,t} \;+\; \sum_{j \in J} p_{j,k}
-\;+\; \min_{j \in J} \sum_{t>k} p_{j,t}
-\qquad \forall k \in M,
-\end{equation}
-ou seja, a carga total da máquina $k$ somada ao menor tempo possível antes e
-depois dela. O corte não elimina nenhuma solução viável e não altera o ótimo.
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[x=0.6cm,y=0.8cm]
+  \definecolor{c1}{RGB}{66,133,244}\definecolor{c2}{RGB}{219,68,55}
+  \definecolor{c3}{RGB}{15,157,88}\definecolor{c4}{RGB}{244,160,0}
+  \newcommand{\op}[4]{\filldraw[fill=#4!45,draw=black] (#2,#1-0.35) rectangle (#3,#1+0.35);
+                      \node at ({(#2+#3)/2},#1) {\small};}
+  \newcommand{\lab}[4]{\node at ({(#2+#3)/2},#1) {\footnotesize #4};}
+  % M1 (y=3)
+  \op{3}{0}{2}{c3}\lab{3}{0}{2}{$T_3$}
+  \op{3}{2}{6}{c4}\lab{3}{2}{6}{$T_4$}
+  \op{3}{6}{9}{c1}\lab{3}{6}{9}{$T_1$}
+  \op{3}{10}{15}{c2}\lab{3}{10}{15}{$T_2$}
+  % M2 (y=2)
+  \op{2}{2}{6}{c3}\lab{2}{2}{6}{$T_3$}
+  \op{2}{6}{9}{c4}\lab{2}{6}{9}{$T_4$}
+  \op{2}{9}{15}{c1}\lab{2}{9}{15}{$T_1$}
+  \op{2}{15}{17}{c2}\lab{2}{15}{17}{$T_2$}
+  % M3 (y=1)
+  \op{1}{6}{11}{c3}\lab{1}{6}{11}{$T_3$}
+  \op{1}{11}{14}{c4}\lab{1}{11}{14}{$T_4$}
+  \op{1}{15}{17}{c1}\lab{1}{15}{17}{$T_1$}
+  \op{1}{17}{21}{c2}\lab{1}{17}{21}{$T_2$}
+  % eixos
+  \foreach \m/\y in {M_1/3,M_2/2,M_3/1} \node[left] at (-0.2,\y) {$\m$};
+  \draw[->] (0,0.4) -- (22.5,0.4) node[right] {$t$};
+  \foreach \t in {0,2,...,22} \draw (\t,0.35) -- (\t,0.45) node[below=2pt] {\scriptsize \t};
+  \draw[dashed,red] (21,0.4) -- (21,3.5) node[above] {\scriptsize $C_{\max}=21$};
+  \draw[dotted,thick] (9,3) -- (10,3); \node[above] at (9.5,3.35) {\scriptsize atraso};
+\end{tikzpicture}
+\caption{Gráfico de Gantt da solução ótima do exemplo.}
+\label{fig:gantt}
+\end{figure}
 
-\paragraph{Tamanho do modelo.} São $3n + 1$ variáveis contínuas e
-$n(n-1)/2$ binárias. Há $2n$ restrições de rota, $3n(n-1)$ disjuntivas, $n$
-de \textit{makespan} e 3 cortes. Para a maior instância ($n=20$): 61 variáveis
-contínuas, 190 binárias e 1203 restrições.
+Para validar a formulação, o modelo foi implementado em Python (PuLP com o
+\emph{solver} HiGHS) e comparado com a enumeração completa das $n!$ sequências,
+usando um simulador que calcula, para cada sequência, o cronograma mais cedo
+possível que respeita as restrições. Em 30 instâncias aleatórias com
+$n = 3,\dots,8$ e tempos inteiros em $[1,20]$, o valor ótimo do modelo
+coincidiu com o da enumeração em todos os casos.
+
+\end{document}
