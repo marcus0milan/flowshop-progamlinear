@@ -1,0 +1,67 @@
+\section{Experimentos Computacionais}
+
+\subsection{Ambiente Computacional}
+
+Os experimentos computacionais foram realizados em um computador equipado com processador Intel Core i5-9400F, 16 GB de memória RAM e sistema operacional Windows.
+
+A implementação do modelo matemático foi realizada utilizando a linguagem Python, a biblioteca PuLP, versão 3.3.2, e o solver de otimização HiGHS, versão 1.16.0.
+
+\subsection{Metodologia}
+
+Foram utilizadas seis instâncias contendo diferentes quantidades de tarefas, sendo elas compostas por 6, 8, 10, 12, 15 e 20 tarefas.
+
+Para cada instância, foi estabelecido um limite máximo de execução de 3600 segundos, conforme definido nos requisitos do trabalho.
+
+Durante os experimentos, foram registrados os seguintes indicadores:
+
+\begin{itemize}
+    \item Quantidade de tarefas;
+    \item Melhor solução encontrada ($C_{\max}$);
+    \item Limite inferior (Bound);
+    \item Gap de otimalidade;
+    \item Tempo de execução em segundos;
+    \item Número de nós explorados;
+    \item Status da solução.
+\end{itemize}
+
+\subsection{Resultados Computacionais}
+
+A Tabela~\ref{tab:resultados_computacionais} apresenta os resultados obtidos para as seis instâncias avaliadas.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultados dos experimentos computacionais}
+\label{tab:resultados_computacionais}
+\small
+\begin{tabular}{crrrrrrc}
+\hline
+Inst. & Tarefas & $C_{\max}$ & Bound & Gap (\%) & Tempo (s) & Nós & Status \\
+\hline
+1 & 6  & 104 & 104 & 0 & 0,079 & 1 & Ótimo \\
+2 & 8  & 179 & 179 & 0 & 0,364 & 5 & Ótimo \\
+3 & 10 & 295 & 295 & 0 & 0,657 & 9 & Ótimo \\
+4 & 12 & 304 & 304 & 0 & 1,340 & 9 & Ótimo \\
+5 & 15 & 374 & 374 & 0 & 0,563 & 1 & Ótimo \\
+6 & 20 & 586 & 586 & 0 & 2,308 & 1 & Ótimo \\
+\hline
+\end{tabular}
+
+\smallskip
+\small Fonte: Elaborado pelos autores.
+\end{table}
+
+\subsection{Análise dos Resultados}
+
+Todas as seis instâncias foram resolvidas até a otimalidade, apresentando gap de 0\% e valores da função objetivo iguais aos respectivos limites inferiores.
+
+O tempo total de resolução das instâncias foi de 5,311 segundos, com tempo médio de aproximadamente 0,885 segundo por instância.
+
+A instância de menor porte, contendo seis tarefas, apresentou o menor tempo computacional, de 0,079 segundo. A instância de maior porte, contendo vinte tarefas, apresentou o maior tempo de execução, de 2,308 segundos.
+
+Observou-se uma tendência de aumento do tempo computacional conforme o crescimento da quantidade de tarefas. Entretanto, esse comportamento não foi estritamente crescente, uma vez que a instância de 15 tarefas apresentou tempo de resolução inferior ao da instância de 12 tarefas.
+
+Essa diferença indica que a dificuldade computacional não depende exclusivamente da quantidade de tarefas, podendo também ser influenciada pelos tempos de processamento e pelas características de cada instância.
+
+Os resultados demonstram que o modelo matemático apresentou desempenho computacional satisfatório para as instâncias avaliadas, encontrando soluções ótimas em tempos significativamente inferiores ao limite estabelecido de 3600 segundos por instância.
+
+Entretanto, a avaliação de instâncias de maior porte seria necessária para analisar a escalabilidade do modelo.
