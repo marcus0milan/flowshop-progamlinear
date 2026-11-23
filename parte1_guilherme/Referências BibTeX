@@ -1,0 +1,26 @@
+@article{graham1979,
+  author  = {Graham, Ronald L. and Lawler, Eugene L. and Lenstra, Jan Karel and Rinnooy Kan, Alexander H. G.},
+  title   = {Optimization and Approximation in Deterministic Sequencing and Scheduling: A Survey},
+  journal = {Annals of Discrete Mathematics},
+  volume  = {5},
+  pages   = {287--326},
+  year    = {1979}
+}
+
+@article{hall1996,
+  author  = {Hall, Nicholas G. and Sriskandarajah, Chelliah},
+  title   = {A Survey of Machine Scheduling Problems with Blocking and No-Wait in Process},
+  journal = {Operations Research},
+  volume  = {44},
+  number  = {3},
+  pages   = {510--525},
+  year    = {1996}
+}
+
+@book{pinedo2016,
+  author    = {Pinedo, Michael L.},
+  title     = {Scheduling: Theory, Algorithms, and Systems},
+  edition   = {5},
+  publisher = {Springer},
+  year      = {2016}
+}
