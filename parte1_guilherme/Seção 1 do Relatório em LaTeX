@@ -30,9 +30,7 @@ Adotam-se as seguintes regras e premissas do ambiente \textit{flowshop}:
 Na literatura de Pesquisa Operacional, seguindo a notação clássica $\alpha \mid \beta \mid \gamma$ de \cite{graham1979}, o problema classifica-se como um \textit{Flowshop} de três máquinas com restrição parcial de ausência de espera, denotado por $F3 \mid \text{no-wait}(M_1, M_2) \mid C_{\max}$. Trata-se de uma variante da família de problemas \textit{no-wait flowshop}, amplamente revisada por \cite{hall1996} e contextualizada na teoria geral de escalonamento por \cite{pinedo2016}.
 
 \subsection{Estrutura dos Dados de Entrada}
-Os experimentos computacionais utilizam as instâncias disponibilizadas na pasta da disciplina. Cada arquivo informa a quantidade de tarefas $n$ e a matriz de tempos de processamento $p_{j,k}$ de cada tarefa $j \in \{1, \dots, n\}$ nas três máquinas ($M_1$, $M_2$ e $M_3$).
-
-\textit{[NOTA PARA O GRUPO: assim que baixarem a pasta do Teams, substituir este parágrafo por uma tabela resumindo o nome de cada instância, o número de tarefas $n$ e a faixa de variação dos tempos de processamento.]}
+Os experimentos computacionais foram realizados com as instâncias fornecidas na pasta da disciplina no Teams. Foram utilizadas seis instâncias contendo 6, 8, 10, 12, 15 e 20 tarefas a serem processadas nas três máquinas. Cada arquivo informa o número de tarefas $n$ e a matriz com os tempos de processamento $p_{j,m}$ de cada tarefa em cada uma das três máquinas.
 
 \subsection{Exemplo Ilustrativo Resolvido Manualmente}
 Para validar a formulação matemática e o código no \textit{solver} antes da execução das instâncias reais, construiu-se uma instância reduzida com $n = 3$ tarefas ($J = \{J_1, J_2, J_3\}$), cujos tempos de processamento constam na Tabela~\ref{tab:exemplo_dados}.

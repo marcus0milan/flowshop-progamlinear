@@ -1,9 +1,9 @@
 """
-modelo_gurobi.py — Implementação no Gurobi do modelo da Pessoa 2
+modelo_gurobi.py — Implementação no Gurobi do modelo posicional
 (Problema 5: Flowshop F3 | no-wait(M1,M2) | Cmax)
 
-resolver()             -> formulação POSICIONAL (a do relatório, seção Modelagem)
-resolver_disjuntivo()  -> formulação disjuntiva big-M (alternativa, para comparação)
+resolver()             -> formulação posicional (modelo adotado no relatório)
+resolver_disjuntivo()  -> formulação disjuntiva big-M (para comparação e teste)
 
 Uso:
     python modelo_gurobi.py                      # valida no exemplo de 3 tarefas

@@ -1,0 +1,433 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Pacotes e configurações ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!75!black,
+    citecolor=blue!75!black,
+    urlcolor=blue!75!black
+}
+
+\newtheorem{proposicao}{Proposição}
+
+\begin{document}
+
+% --- Cabeçalho da Disciplina ---
+\begin{center}
+    {\large \textbf{FATEC -- Faculdade de Tecnologia de Ribeirão Preto}}\\[0.2em]
+    {\normalsize Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas}\\[0.2em]
+    {\normalsize Programação Linear -- Prof. Me. Júnior César Bonafim}\\[0.3em]
+    {\small \texttt{junior.bonafim@cps.sp.gov.br}}\\[1.0em]
+    \hrule
+    \vspace{0.7em}
+    {\LARGE \textbf{Trabalho Final -- Problema 5}}\\[0.3em]
+    {\Large \textbf{Sequenciamento em Flowshop de Três Máquinas com Restrição de Não Espera Parcial}}\\[0.3em]
+    {\normalsize Modelagem Matemática, Implementação e Resultados Computacionais}
+    \vspace{0.7em}
+    \hrule
+    \vspace{0.9em}
+
+    \textbf{Integrantes do Grupo:}\\[0.3em]
+    Artur Ruiz \quad\textbar\quad 
+    Felipe Savegnago \quad\textbar\quad 
+    Guilherme \quad\textbar\quad 
+    Marcus Vinícius \quad\textbar\quad 
+    Tobias
+
+    \vspace{0.5em}
+    {\small 17 de novembro de 2026}
+\end{center}
+
+\vspace{0.5em}
+
+\begin{abstract}
+\noindent Este trabalho apresenta a modelagem matemática e a resolução computacional do Problema 5 da disciplina de Programação Linear. O problema consiste em programar um conjunto de tarefas em um ambiente \textit{flowshop} de três máquinas com restrição de ausência de espera (\textit{no-wait}) entre as máquinas 1 e 2, e espera permitida antes da máquina 3, buscando minimizar o tempo total de execução (\textit{makespan}, $C_{\max}$). O problema é classificado como $F3 \mid \text{no-wait}(M_1 \to M_2),\, \text{prmu} \mid C_{\max}$. Demonstrou-se que a busca pode ser restrita a soluções permutacionais sem perda de otimalidade. Desenvolveu-se um modelo de programação linear inteira mista (PLIM) posicional, evitando o uso de constantes \textit{big-M}. O modelo foi validado com instâncias didáticas de 3 e 4 tarefas (com enumeração completa e gráfico de Gantt) e com 30 instâncias aleatórias. A implementação em Python foi testada nas seis instâncias oficiais da disciplina (de 6 a 20 tarefas), com limite de tempo de 3600 segundos por instância. Todas as instâncias foram resolvidas até a otimalidade comprovada (gap de $0{,}0\%$), com tempo médio de $0{,}885$ segundo e tempo máximo de $2{,}308$ segundos para a maior instância.
+\end{abstract}
+
+\vspace{0.3em}
+\noindent\textbf{Palavras-chave:} Flowshop; No-Wait; Programação Linear Inteira Mista; Makespan; Otimização.
+
+\vspace{1.0em}
+
+% =====================================================================
+% SEÇÃO 1: APRESENTAÇÃO DO PROBLEMA
+% =====================================================================
+\section{Apresentação do Problema}
+\label{sec:apresentacao}
+
+\subsection{Enunciado Oficial}
+O problema abordado neste trabalho é o Problema 5 da lista de trabalhos finais da disciplina de Programação Linear:
+
+\begin{quote}
+\textit{``5. Determinado setor de uma indústria possui três máquinas em arranjo flowshop. Todas as tarefas realizadas neste setor passam pelas três máquinas na mesma ordem, porém os tempos de execução em cada máquina variam de tarefa para tarefa. As tarefas que saem da máquina 1 devem ser imediatamente processadas pela máquina 2 sem espera devido ao tipo da operação realizada. Elabore modelo de otimização que determine a programação das tarefas neste setor de forma que se minimize o tempo de execução total dos trabalhos e não permita espera entre as operações realizadas entre as máquinas 1 e 2.''}
+\end{quote}
+
+\subsection{Contexto e Relevância Prática}
+O sequenciamento de produção em ambientes industriais busca definir a ordem e os instantes de execução de um conjunto de tarefas em máquinas compartilhadas, de modo a reduzir o tempo total de fabricação, evitar gargalos e aumentar a produtividade da linha. Em setores como metalurgia, fundição, indústria química e processamento de alimentos, existem restrições tecnológicas rígidas entre determinadas etapas: após deixar uma máquina (por exemplo, um forno de aquecimento ou um reator), o produto não pode ficar parado aguardando a etapa seguinte (como prensagem ou moldagem), pois perderia temperatura ou características físico-químicas.
+
+Neste trabalho, estuda-se um setor industrial composto por três máquinas dispostas em arranjo \textit{flowshop} ($M_1$, $M_2$ e $M_3$). Todas as tarefas devem percorrer exatamente a mesma sequência tecnológica ($M_1 \to M_2 \to M_3$), com tempos de processamento específicos para cada tarefa em cada máquina. Por exigência do processo, toda tarefa que conclui sua operação na máquina $M_1$ deve iniciar imediatamente seu processamento na máquina $M_2$, sem qualquer tempo de espera intermediário (\textit{no-wait}). O objetivo é determinar a programação das tarefas que minimize o tempo total de execução do lote (\textit{makespan}).
+
+\subsection{Descrição Formal, Premissas e Classificação}
+O problema recebe como dados de entrada:
+\begin{itemize}
+    \item O conjunto de tarefas a serem programadas, $J = \{1, 2, \dots, n\}$;
+    \item O conjunto ordenado de três máquinas, $M = \{1, 2, 3\}$;
+    \item O tempo de processamento $p_{j,m} > 0$ da tarefa $j \in J$ na máquina $m \in M$.
+\end{itemize}
+
+A partir dessas entradas, deseja-se determinar os instantes de início $S_{j,m} \ge 0$ (e, consequentemente, os instantes de término $C_{j,m} = S_{j,m} + p_{j,m}$) de cada tarefa $j \in J$ em cada máquina $m \in M$, de forma a minimizar o instante de conclusão da última tarefa na máquina $M_3$:
+\begin{equation}
+    C_{\max} = \max_{j \in J} C_{j,3}.
+\end{equation}
+
+Adotam-se as seguintes regras e premissas do ambiente \textit{flowshop}:
+\begin{itemize}
+    \item \textbf{Fluxo unidirecional:} todas as tarefas passam obrigatoriamente pelas máquinas na ordem $M_1 \to M_2 \to M_3$, e todas estão disponíveis no instante $t = 0$.
+    \item \textbf{Capacidade unitária e não preempção:} cada máquina processa no máximo uma tarefa por vez e, uma vez iniciada, uma operação não pode ser interrompida até seu término.
+    \item \textbf{Ausência de espera entre $M_1$ e $M_2$ (\textit{no-wait} parcial):} para toda tarefa $j \in J$, exige-se que $S_{j,2} = C_{j,1} = S_{j,1} + p_{j,1}$. Para satisfazer essa condição sem sobreposição na máquina $M_2$, é permitido atrasar propositalmente o início de uma tarefa na máquina $M_1$, gerando ociosidade controlada em $M_1$.
+    \item \textbf{Espera permitida entre $M_2$ e $M_3$:} após concluir a etapa em $M_2$, uma tarefa pode aguardar em estoque intermediário (\textit{buffer}) até que $M_3$ esteja disponível ($S_{j,3} \ge C_{j,2}$).
+    \item \textbf{Propriedade de permutação:} devido à restrição \textit{no-wait} entre $M_1$ e $M_2$ (com $p_{j,1} > 0$), a ordem de execução nas duas primeiras máquinas é necessariamente idêntica. Além disso, para minimizar $C_{\max}$ na última máquina ($M_3$), atender as tarefas na mesma ordem de chegada em $M_2$ sempre preserva a otimalidade; logo, existe ao menos uma solução ótima permutacional (mesma sequência de tarefas em $M_1$, $M_2$ e $M_3$).
+\end{itemize}
+
+Na literatura de Pesquisa Operacional, seguindo a notação clássica de Graham et al.~\cite{graham1979}, o problema classifica-se como $F3 \mid \text{no-wait}(M_1 \to M_2),\, \text{prmu} \mid C_{\max}$, sendo uma variante do \textit{no-wait flowshop} abordado por Hall e Sriskandarajah~\cite{hall1996} e Pinedo~\cite{pinedo2016}.
+
+\subsection{Origem das Instâncias de Teste}
+As instâncias utilizadas nos experimentos computacionais foram obtidas diretamente da pasta oficial \textit{``Dados para o trabalho final''} no canal geral da disciplina no Microsoft Teams. Foram avaliadas seis instâncias com 6, 8, 10, 12, 15 e 20 tarefas a serem programadas nas três máquinas.
+
+\subsection{Exemplo Ilustrativo Resolvido Manualmente}
+\label{subsec:exemplo_manual}
+Para validar o modelo antes de rodar os casos maiores, construiu-se uma instância reduzida com $n = 3$ tarefas ($J = \{J_1, J_2, J_3\}$), cujos tempos de processamento constam na Tabela~\ref{tab:exemplo_dados}.
+
+\begin{table}[H]
+\centering
+\caption{Tempos de processamento da instância didática de 3 tarefas.}
+\label{tab:exemplo_dados}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Tarefa & Máquina 1 ($p_{j,1}$) & Máquina 2 ($p_{j,2}$) & Máquina 3 ($p_{j,3}$) \\ \midrule
+$J_1$ & 2 & 6 & 2 \\
+$J_2$ & 1 & 5 & 3 \\
+$J_3$ & 4 & 1 & 3 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Como há 3 tarefas, existem $3! = 6$ sequências possíveis. Em qualquer sequência $(a, b, c)$, para garantir que a tarefa $b$ não espere entre $M_1$ e $M_2$, seu início em $M_1$ deve satisfazer $S_{b,1} = \max(C_{a,1},\; C_{a,2} - p_{b,1})$, enquanto na máquina $M_3$ vale $S_{b,3} = \max(C_{b,2},\; C_{a,3})$. A Tabela~\ref{tab:exemplo_permutacoes} mostra o \textit{makespan} obtido em todas as 6 sequências.
+
+\begin{table}[H]
+\centering
+\caption{Enumeração completa das sequências para a instância de 3 tarefas.}
+\label{tab:exemplo_permutacoes}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+Sequência & Términos em $M_3$ ($C_{a,3},\, C_{b,3},\, C_{c,3}$) & \textit{Makespan} ($C_{\max}$) \\ \midrule
+$(J_1, J_2, J_3)$ & 10,\; 16,\; 19 & 19 \\
+$(J_1, J_3, J_2)$ & 10,\; 13,\; 17 & 17 \\
+$(J_2, J_1, J_3)$ & 9,\; 14,\; 17 & 17 \\
+\textbf{$(J_2, J_3, J_1)$} & \textbf{9,\; 12,\; 16} & \textbf{16} \\
+$(J_3, J_1, J_2)$ & 8,\; 14,\; 20 & 20 \\
+$(J_3, J_2, J_1)$ & 8,\; 13,\; 18 & 18 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+A solução ótima é a sequência \textbf{$(J_2, J_3, J_1)$}, com \textbf{$C_{\max} = 16$}. O cronograma completo dessa solução está na Tabela~\ref{tab:exemplo_cronograma}.
+
+\begin{table}[H]
+\centering
+\caption{Cronograma da sequência ótima $(J_2, J_3, J_1)$ ($C_{\max} = 16$).}
+\label{tab:exemplo_cronograma}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+Tarefa & $M_1$ $[S_{j,1},\, C_{j,1}]$ & $M_2$ $[S_{j,2},\, C_{j,2}]$ & $M_3$ $[S_{j,3},\, C_{j,3}]$ & Observação \\ \midrule
+$J_2$ & $[0, 1]$ & $[1, 6]$ & $[6, 9]$ & Sem espera nas transições \\
+$J_3$ & $[2, 6]$ & $[6, 7]$ & $[9, 12]$ & Atraso de 1 u.t. em $M_1$; espera de 2 u.t. antes de $M_3$ \\
+$J_1$ & $[6, 8]$ & $[8, 14]$ & $[14, 16]$ & Entra em $M_2$ imediatamente após $M_1$ \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Esse exemplo serviu de teste para o código do modelo:
+\begin{itemize}
+    \item $J_3$ é atrasada de propósito em 1 unidade de tempo na máquina 1 (começa em $t = 2$ em vez de $t = 1$) para terminar exatamente em $t = 6$, quando $M_2$ fica livre.
+    \item Se a restrição de não espera entre $M_1$ e $M_2$ fosse ignorada, o modelo daria $C_{\max} = 15$ (valor incorreto).
+    \item Se fosse exigida ausência de espera também entre $M_2$ e $M_3$, o ótimo subiria para $C_{\max} = 17$ (na sequência $(J_2, J_1, J_3)$).
+\end{itemize}
+
+
+% =====================================================================
+% SEÇÃO 2: MODELAGEM DO PROBLEMA
+% =====================================================================
+\section{Modelagem do Problema}
+\label{sec:modelagem}
+
+\subsection{Por que basta considerar permutações}
+Em um \textit{flowshop} geral, a ordem de atendimento poderia em tese mudar de máquina para máquina. No entanto, para o nosso problema, podemos restringir o modelo a soluções de permutação (mesma sequência nas três máquinas) sem perder nenhuma solução ótima:
+
+\begin{proposicao}
+\label{prop:permutacao}
+Existe uma programação ótima de $F3 \mid \text{no-wait}(M_1 \to M_2) \mid C_{\max}$ em que a sequência das tarefas é a mesma nas três máquinas.
+\end{proposicao}
+
+\begin{proof}[\textbf{Justificativa}]
+\emph{($M_1$ e $M_2$.)} Como cada tarefa entra em $M_2$ no exato instante em que sai de $M_1$, a ordem de entrada em $M_2$ é a ordem de saída de $M_1$. Como os tempos de processamento são positivos, essa ordem é a própria ordem de processamento em $M_1$. Logo, as duas sequências são necessariamente iguais.
+
+\emph{($M_2$ e $M_3$.)} Vale o argumento clássico de troca para as duas últimas máquinas de um \textit{flowshop} com objetivo $C_{\max}$ (Conway, Maxwell e Miller, 1967~\cite{conway1967}): se duas tarefas consecutivas em $M_3$ aparecem na ordem inversa da de $M_2$, trocá-las em $M_3$ não aumenta o \textit{makespan}. A troca altera apenas a programação de $M_3$ e, portanto, não interfere na restrição de não espera entre $M_1$ e $M_2$. Repetindo as trocas, obtém-se em $M_3$ a mesma sequência de $M_2$ sem piorar $C_{\max}$.
+\end{proof}
+
+Assim, resolver o problema equivale a escolher uma permutação das tarefas e calcular os instantes de término em cada máquina.
+
+\subsection{Conjuntos e Parâmetros}
+\begin{itemize}
+    \item $J = \{1,\dots,n\}$: conjunto de tarefas, indexado por $j$;
+    \item $K = \{1,\dots,n\}$: conjunto de posições na sequência, indexado por $k$;
+    \item $M = \{1,2,3\}$: conjunto de máquinas, indexado por $m$;
+    \item $p_{j,m} \ge 0$: tempo de processamento da tarefa $j$ na máquina $m$.
+\end{itemize}
+
+\subsection{Variáveis de Decisão}
+\begin{itemize}
+    \item $x_{jk} \in \{0,1\}$: vale 1 se a tarefa $j$ ocupa a posição $k$ da sequência, e 0 caso contrário;
+    \item $C_{k,m} \ge 0$: instante de término, na máquina $m$, da tarefa que ocupa a posição $k$.
+\end{itemize}
+
+A formulação é \textit{posicional}: em vez de usar variáveis de precedência do tipo ``quem vem antes de quem'' ($y_{ij}$ com constantes \textit{big-M}), associamos cada tarefa a uma posição fixa $k$. Os termos de tempo são representados pela expressão linear:
+\begin{equation}
+    P_{k,m} = \sum_{j \in J} p_{j,m}\, x_{jk},
+\end{equation}
+que seleciona o tempo de processamento na máquina $m$ da tarefa que foi colocada na posição $k$. Como exatamente um $x_{jk}$ vale 1 para cada posição $k$, a expressão é perfeitamente linear.
+
+\subsection{Função Objetivo}
+\begin{equation}
+    \min \; C_{n,3} \label{eq:obj}
+\end{equation}
+O \textit{makespan} é o instante em que a última tarefa termina na última máquina. Pelas restrições de capacidade de $M_3$, os términos em $M_3$ são crescentes com a posição, de modo que a última tarefa a terminar é a da posição $n$.
+
+\subsection{Restrições}
+
+\paragraph{Atribuição.} Cada tarefa ocupa exatamente uma posição, e cada posição recebe exatamente uma tarefa:
+\begin{align}
+    \sum_{k \in K} x_{jk} &= 1, && \forall\, j \in J \label{eq:atr1}\\
+    \sum_{j \in J} x_{jk} &= 1, && \forall\, k \in K \label{eq:atr2}
+\end{align}
+
+\paragraph{Máquina 1.} A primeira tarefa só pode terminar após seu processamento. As demais começam em $M_1$ depois que a anterior sai de $M_1$:
+\begin{align}
+    C_{1,1} &\ge P_{1,1} \label{eq:m1a}\\
+    C_{k,1} &\ge C_{k-1,1} + P_{k,1}, && \forall\, k \in K,\, k \ge 2 \label{eq:m1b}
+\end{align}
+A desigualdade em~\eqref{eq:m1b} permite que $M_1$ fique ociosa quando necessário, adiando o início da tarefa para que ela termine exatamente quando $M_2$ estiver livre.
+
+\paragraph{Não espera entre Máquina 1 e Máquina 2.} A tarefa deve começar em $M_2$ no exato momento em que termina em $M_1$. Como o início em $M_2$ é $C_{k,2} - P_{k,2}$, temos a igualdade:
+\begin{equation}
+    C_{k,2} = C_{k,1} + P_{k,2}, \quad \forall\, k \in K \label{eq:nw}
+\end{equation}
+
+\paragraph{Capacidade da Máquina 2.} A tarefa da posição $k$ só entra em $M_2$ depois que a anterior da posição $k-1$ saiu de $M_2$:
+\begin{equation}
+    C_{k,2} \ge C_{k-1,2} + P_{k,2}, \quad \forall\, k \in K,\, k \ge 2 \label{eq:m2}
+\end{equation}
+Substituindo a equação~\eqref{eq:nw} em~\eqref{eq:m2}, essa restrição equivale a $C_{k,1} \ge C_{k-1,2}$, ou seja, a tarefa na posição $k$ só pode concluir em $M_1$ quando $M_2$ já estiver desocupada.
+
+\paragraph{Máquina 3: rota e capacidade.} A tarefa só pode começar em $M_3$ depois de sair de $M_2$ (aqui a espera é permitida), e depois que a tarefa anterior desocupa $M_3$:
+\begin{align}
+    C_{k,3} &\ge C_{k,2} + P_{k,3}, && \forall\, k \in K \label{eq:m3a}\\
+    C_{k,3} &\ge C_{k-1,3} + P_{k,3}, && \forall\, k \in K,\, k \ge 2 \label{eq:m3b}
+\end{align}
+
+\paragraph{Domínio das variáveis.}
+\begin{align}
+    x_{jk} &\in \{0,1\}, && \forall\, j \in J,\, k \in K \label{eq:dom1}\\
+    C_{k,m} &\ge 0, && \forall\, k \in K,\, m \in M \label{eq:dom2}
+\end{align}
+
+\subsection{Modelo Completo}
+\begin{align*}
+    \min\quad & C_{n,3}\\
+    \text{s.a.}\quad
+    & \sum_{k\in K} x_{jk} = 1 && \forall j \in J\\
+    & \sum_{j\in J} x_{jk} = 1 && \forall k \in K\\
+    & C_{1,1} \ge \sum_{j} p_{j,1}x_{j1}\\
+    & C_{k,1} \ge C_{k-1,1} + \sum_{j} p_{j,1}x_{jk} && \forall k \ge 2\\
+    & C_{k,2} = C_{k,1} + \sum_{j} p_{j,2}x_{jk} && \forall k \in K\\
+    & C_{k,2} \ge C_{k-1,2} + \sum_{j} p_{j,2}x_{jk} && \forall k \ge 2\\
+    & C_{k,3} \ge C_{k,2} + \sum_{j} p_{j,3}x_{jk} && \forall k \in K\\
+    & C_{k,3} \ge C_{k-1,3} + \sum_{j} p_{j,3}x_{jk} && \forall k \ge 2\\
+    & x_{jk} \in \{0,1\},\quad C_{k,m} \ge 0
+\end{align*}
+
+\paragraph{Tamanho e características.} O modelo possui $n^2$ variáveis binárias, $3n$ variáveis contínuas e $7n - 2$ restrições lineares. Por ser uma formulação posicional sem parâmetros \textit{big-M}, sua relaxação linear é bastante firme. O problema é NP-difícil, pois o \textit{flowshop} clássico $F3 \mid\mid C_{\max}$ já é NP-difícil (Garey, Johnson e Sethi, 1976~\cite{garey1976}).
+
+\subsection{Exemplo Ilustrativo de 4 Tarefas com Gráfico de Gantt}
+Considere o exemplo com $n = 4$ tarefas com os tempos dados na Tabela~\ref{tab:ex4}.
+
+\begin{table}[H]
+\centering
+\caption{Tempos de processamento do exemplo de 4 tarefas.}
+\label{tab:ex4}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+ & $T_1$ & $T_2$ & $T_3$ & $T_4$ \\ \midrule
+$p_{j,1}$ & 3 & 5 & 2 & 4 \\
+$p_{j,2}$ & 6 & 2 & 4 & 3 \\
+$p_{j,3}$ & 2 & 4 & 5 & 3 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+A solução ótima encontrada pelo modelo foi a sequência $(T_3, T_4, T_1, T_2)$ com $C_{\max}^* = 21$ (a sequência original $T_1, T_2, T_3, T_4$ resultaria em $C_{\max} = 23$). A Figura~\ref{fig:gantt} apresenta o gráfico de Gantt correspondente.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.62cm,y=0.9cm]
+  \definecolor{c1}{RGB}{66,133,244}
+  \definecolor{c2}{RGB}{219,68,55}
+  \definecolor{c3}{RGB}{15,157,88}
+  \definecolor{c4}{RGB}{244,160,0}
+  \newcommand{\op}[4]{\filldraw[fill=#4!45,draw=black] (#2,#1-0.35) rectangle (#3,#1+0.35);
+                      \node at ({(#2+#3)/2},#1) {\small};}
+  \newcommand{\lab}[4]{\node at ({(#2+#3)/2},#1) {\footnotesize #4};}
+  
+  % M1 (y=3)
+  \op{3}{0}{2}{c3}\lab{3}{0}{2}{$T_3$}
+  \op{3}{2}{6}{c4}\lab{3}{2}{6}{$T_4$}
+  \op{3}{6}{9}{c1}\lab{3}{6}{9}{$T_1$}
+  \op{3}{10}{15}{c2}\lab{3}{10}{15}{$T_2$}
+  
+  % M2 (y=2)
+  \op{2}{2}{6}{c3}\lab{2}{2}{6}{$T_3$}
+  \op{2}{6}{9}{c4}\lab{2}{6}{9}{$T_4$}
+  \op{2}{9}{15}{c1}\lab{2}{9}{15}{$T_1$}
+  \op{2}{15}{17}{c2}\lab{2}{15}{17}{$T_2$}
+  
+  % M3 (y=1)
+  \op{1}{6}{11}{c3}\lab{1}{6}{11}{$T_3$}
+  \op{1}{11}{14}{c4}\lab{1}{11}{14}{$T_4$}
+  \op{1}{15}{17}{c1}\lab{1}{15}{17}{$T_1$}
+  \op{1}{17}{21}{c2}\lab{1}{17}{21}{$T_2$}
+  
+  % Eixos
+  \foreach \m/\y in {M_1/3,M_2/2,M_3/1} \node[left] at (-0.2,\y) {$\m$};
+  \draw[->] (0,0.3) -- (22.5,0.3) node[right] {\small $t$};
+  \foreach \t in {0,2,...,22} \draw (\t,0.25) -- (\t,0.35) node[below=2pt] {\scriptsize \t};
+  \draw[dashed,red] (21,0.3) -- (21,3.5) node[above] {\scriptsize $C_{\max}=21$};
+  \draw[dotted,thick] (9,3) -- (10,3); 
+  \node[above] at (9.5,3.35) {\scriptsize atraso};
+\end{tikzpicture}
+\caption{Gráfico de Gantt da solução ótima para a instância de 4 tarefas.}
+\label{fig:gantt}
+\end{figure}
+
+O gráfico ilustra claramente dois pontos do modelo:
+\begin{itemize}
+    \item \textbf{Atraso proposital em $M_1$:} A tarefa $T_2$ poderia começar em $M_1$ no instante 9, mas terminaria em 14, momento em que $M_2$ ainda estaria ocupada por $T_1$ (até o instante 15). Como não pode haver espera entre $M_1$ e $M_2$, $T_2$ começa em 10 e conclui em $M_1$ exatamente em 15, entrando direto em $M_2$.
+    \item \textbf{Espera permitida antes de $M_3$:} A tarefa $T_4$ sai de $M_2$ no instante 9 e aguarda no estoque intermediário até o instante 11 para entrar em $M_3$.
+\end{itemize}
+
+O modelo também foi comparado com a enumeração completa das $n!$ sequências em 30 instâncias aleatórias com $n = 3, \dots, 8$ tarefas e tempos entre 1 e 20, coincidindo com a solução da enumeração em todas elas.
+
+
+% =====================================================================
+% SEÇÃO 3: IMPLEMENTAÇÃO COMPUTACIONAL
+% =====================================================================
+\section{Implementação Computacional}
+\label{sec:implementacao}
+
+O modelo matemático foi implementado na linguagem Python (versão 3.10+). Durante o desenvolvimento do trabalho, o grupo criou implementações interoperáveis:
+\begin{itemize}
+    \item Utilizando a biblioteca \texttt{PuLP} (versão 3.3.2) acoplada ao \textit{solver} aberto \textit{HiGHS} (versão 1.16.0)~\cite{huangfu2018};
+    \item Utilizando a biblioteca nativa \texttt{gurobipy} com o \textit{solver} \textit{Gurobi} (versão 11.0+)~\cite{gurobi}.
+\end{itemize}
+
+O código é dividido em três etapas principais:
+\begin{enumerate}
+    \item \textbf{Leitura e validação dos dados:} O script lê os arquivos de texto das instâncias fornecidas, extrai a matriz de tempos e verifica consistências básicas (como tarefas duplicadas, ausência de tempos ou valores negativos).
+    \item \textbf{Construção do modelo:} As variáveis de decisão $x_{jk}$ e $C_{k,m}$ são criadas e as restrições são adicionadas ao modelo conforme a formulação posicional da Seção~\ref{sec:modelagem}. O tempo limite de 3600 segundos foi configurado como parâmetro do \textit{solver}.
+    \item \textbf{Cálculo do cronograma mais cedo:} Como o \textit{solver} pode devolver folgas arbitrárias em operações intermediárias que não alteram o valor de $C_{\max}$, implementou-se a função \texttt{cronograma\_mais\_cedo}. Essa função recalcula os instantes exatos de início e término respeitando estritamente o \textit{no-wait} entre $M_1$ e $M_2$ e adiantando as operações o máximo possível, permitindo gerar a tabela de horários e os gráficos de Gantt corretamente.
+\end{enumerate}
+
+
+% =====================================================================
+% SEÇÃO 4: EXPERIMENTOS COMPUTACIONAIS
+% =====================================================================
+\section{Experimentos Computacionais}
+\label{sec:experimentos}
+
+\subsection{Ambiente Computacional}
+Os experimentos computacionais foram realizados em um computador equipado com processador Intel Core i5-9400F, 16 GB de memória RAM e sistema operacional Windows.
+
+A implementação do modelo matemático foi realizada utilizando a linguagem Python, a biblioteca PuLP, versão 3.3.2, e o \textit{solver} de otimização HiGHS, versão 1.16.0.
+
+\subsection{Metodologia}
+Foram utilizadas seis instâncias contendo diferentes quantidades de tarefas, sendo elas compostas por 6, 8, 10, 12, 15 e 20 tarefas, disponibilizadas na pasta da disciplina.
+
+Para cada instância, foi estabelecido um limite máximo de execução de 3600 segundos (1 hora), conforme definido nos requisitos do trabalho.
+
+Durante os experimentos, foram registrados os seguintes indicadores:
+\begin{itemize}
+    \item Quantidade de tarefas;
+    \item Melhor solução encontrada ($C_{\max}$);
+    \item Limite inferior (Bound);
+    \item Gap de otimalidade;
+    \item Tempo de execução em segundos;
+    \item Número de nós explorados;
+    \item Status da solução.
+\end{itemize}
+
+\subsection{Resultados Computacionais}
+A Tabela~\ref{tab:resultados_computacionais} apresenta os resultados obtidos para as seis instâncias avaliadas.
+
+\begin{table}[H]
+\centering
+\caption{Resultados dos experimentos computacionais.}
+\label{tab:resultados_computacionais}
+\small
+\begin{tabular}{crrrrrrc}
+\toprule
+Inst. & Tarefas & $C_{\max}$ & Bound & Gap (\%) & Tempo (s) & Nós & Status \\ \midrule
+1 & 6  & 104 & 104 & 0{,}0 & 0,079 & 1 & Ótimo \\
+2 & 8  & 179 & 179 & 0{,}0 & 0,364 & 5 & Ótimo \\
+3 & 10 & 295 & 295 & 0{,}0 & 0,657 & 9 & Ótimo \\
+4 & 12 & 304 & 304 & 0{,}0 & 1,340 & 9 & Ótimo \\
+5 & 15 & 374 & 374 & 0{,}0 & 0,563 & 1 & Ótimo \\
+6 & 20 & 586 & 586 & 0{,}0 & 2,308 & 1 & Ótimo \\ \bottomrule
+\end{tabular}
+\smallskip
+
+\footnotesize Fonte: Elaborado pelos autores.
+\end{table}
+
+\subsection{Análise dos Resultados}
+Todas as seis instâncias foram resolvidas até a otimalidade dentro do limite de tempo, apresentando gap de 0\% e valores da função objetivo iguais aos respectivos limites inferiores (\textit{bound}).
+
+O tempo total de resolução de todas as instâncias foi de 5,311 segundos, com tempo médio de aproximadamente 0,885 segundo por instância. A instância de menor porte (6 tarefas) levou apenas 0,079 segundo, enquanto a maior instância (20 tarefas) levou 2,308 segundos, tempo muito inferior ao limite de 3600 segundos.
+
+Observou-se uma tendência geral de aumento do tempo computacional conforme o crescimento do número de tarefas. Contudo, esse crescimento não foi estritamente monótono: a instância de 15 tarefas foi resolvida em 0,563 segundo, mais rápido do que a instância de 12 tarefas (1,340 segundo) e de 10 tarefas (0,657 segundo). Isso indica que a dificuldade da instância não depende apenas da quantidade de tarefas, mas também da distribuição dos tempos de processamento e das folgas entre as máquinas.
+
+Além disso, em três das seis instâncias (6, 15 e 20 tarefas), a solução ótima foi comprovada explorando apenas 1 nó na árvore de busca (resolvida diretamente no nó raiz), o que evidencia a força da formulação posicional sem \textit{big-M}.
+
+
+% =====================================================================
+% SEÇÃO 5: CONCLUSÃO
+% =====================================================================
+\input{conclusao.tex}
+
+
+% =====================================================================
+% REFERÊNCIAS BIBLIOGRÁFICAS
+% =====================================================================
+\bibliographystyle{plain}
+\bibliography{referencias}
+
+\end{document}

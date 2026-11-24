@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.bbl
+*.blg
+*.toc
+.vscode/

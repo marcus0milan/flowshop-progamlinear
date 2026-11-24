@@ -1,0 +1,17 @@
+\section{Conclusão}
+\label{sec:conclusao}
+
+Neste trabalho, foi desenvolvida a modelagem matemática e a implementação computacional para o problema de programação da produção em um sistema \textit{flowshop} de três máquinas com restrição de ausência de espera entre a primeira e a segunda máquina ($F3 \mid \text{no-wait}(M_1 \to M_2) \mid C_{\max}$), correspondente ao Problema 5 da disciplina de Programação Linear.
+
+A formulação posicional adotada se mostrou uma escolha bastante eficiente quando comparada aos modelos disjuntivos tradicionais baseados em variáveis \textit{big-M}. Por não utilizar parâmetros arbitrários de penalização, o modelo posicional gerou relaxações lineares mais fortes, permitindo podas mais rápidas na árvore de busca. Além disso, a demonstração teórica de que a restrição a sequências permutacionais não perde soluções ótimas garantiu uma formulação compacta ($n^2$ variáveis binárias e $3n$ variáveis contínuas), simplificando a implementação e reduzindo o espaço de busca.
+
+O processo de validação foi estruturado em três níveis:
+\begin{enumerate}
+    \item A validação manual de uma instância didática de 3 tarefas por enumeração exaustiva das $3! = 6$ soluções possíveis, confirmando a sensibilidade do modelo para identificar o valor ótimo ($C_{\max} = 16$) e comprovar que desconsiderar o \textit{no-wait} levaria a um valor falso ($C_{\max} = 15$);
+    \item A análise gráfica de uma instância com 4 tarefas por meio de gráfico de Gantt, que permitiu visualizar na prática o atraso proposital de início na máquina 1 para que a peça não fique retida entre $M_1$ e $M_2$, além do uso do estoque intermediário antes de $M_3$;
+    \item A validação cruzada do modelo com um algoritmo de enumeração completa em 30 instâncias aleatórias pequenas (com $n$ de 3 a 8 tarefas), obtendo exatamente o mesmo resultado ótimo em todos os casos.
+\end{enumerate}
+
+Nos experimentos computacionais realizados com as seis instâncias fornecidas pelo professor (variando de 6 a 20 tarefas), o modelo apresentou excelente desempenho. Todas as instâncias foram resolvidas até a otimalidade comprovada (gap de $0{,}0\%$) em tempos consideravelmente inferiores ao limite regulamentar de 1 hora (3600 segundos). O tempo total de execução para as seis instâncias foi de apenas $5{,}311$ segundos, sendo que a maior instância (com 20 tarefas e um espaço de busca de $20! \approx 2{,}43 \times 10^{18}$ sequências) foi resolvida em apenas $2{,}308$ segundos. Vale notar que em metade das instâncias o ótimo foi comprovado já no primeiro nó da árvore de busca.
+
+Como o problema é comprovadamente NP-difícil, a principal limitação da abordagem exata reside na escalabilidade para instâncias industriais de grande porte (por exemplo, com 50 ou 100 tarefas), nas quais o tempo de execução do \textit{branch-and-cut} pode crescer rapidamente. Para trabalhos futuros, sugere-se o desenvolvimento de heurísticas construtivas (como adaptações do algoritmo NEH) e meta-heurísticas (como \textit{Simulated Annealing} ou Algoritmos Genéticos) para a obtenção de soluções aproximadas de alta qualidade em poucos segundos, além de estudar extensões do modelo que considerem buffers com capacidade finita entre as máquinas 2 e 3 ou tempos de preparação dependentes da sequência.
